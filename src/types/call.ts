@@ -1,0 +1,10 @@
+export enum CallStatus {
+  AUTO_CLOSED = 'AUTO_CLOSED',
+  PENDING_REVIEW = 'PENDING_REVIEW',
+}
+export enum CallCategory {
+  BUG = 'BUG',
+  PROPOSED_BOOKING = 'PROPOSED_BOOKING',
+  ABRUPT_HUNGUP = 'ABRUPT_HUNGUP',
+  OTHER = 'OTHER',
+}

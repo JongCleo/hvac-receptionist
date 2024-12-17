@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model bookings {
+  id          Int      @id @default(autoincrement())
+  mins_offset Int?     @default(0)
+  rep_id      Int?
+  shift_id    String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users?   @relation(fields: [rep_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model conversations {
+  assembly_id                      String?
+  location                         String?
+  crm_link                         String?
+  is_transcribed                   Boolean?      @default(false)
+  is_sales_objections_processed    Boolean?      @default(false)
+  upload_id                        String?       @unique
+  title                            String?
+  meeting_length                   Float?        @default(0)
+  status                           String?
+  is_objection_responses_processed Boolean?      @default(false)
+  is_metrics_calculated            Boolean?      @default(false)
+  pitch_and_closing_processed      Boolean?      @default(false)
+  three_nos_processed              Boolean?      @default(false)
+  words                            Json?         @default("{}")
+  recording_id                     Int?
+  talk_speed                       Float?        @default(0)
+  media_url                        String?
+  summary                          String?
+  longest_customer_monologue       Float?        @default(0)
+  longest_rep_monologue            Float?        @default(0)
+  rep_talk_time                    Float?        @default(0)
+  customer_talk_time               Float?        @default(0)
+  transcript                       Json?         @default("[]")
+  id                               Int           @id @default(autoincrement())
+  created_at                       DateTime?     @default(now()) @db.Timestamptz(6)
+  meeting_at                       DateTime?     @default(now()) @db.Timestamptz(6)
+  patience                         Decimal?      @default(0) @db.Decimal
+  rep_id                           Int?
+  is_upserted                      Boolean?      @default(false)
+  users                            users?        @relation(fields: [rep_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversation_rep_id_fkey")
+  recordings                       recordings?   @relation(fields: [recording_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  favorite                         favorite[]
+  highlights                       highlights[]
+  transcripts                      transcripts[]
+}
+
+model favorite {
+  id              Int           @id @default(autoincrement())
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  user_id         Int
+  conversation_id Int
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users           users         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model highlights {
+  start_time      Float?         @default(0)
+  end_time        Float?         @default(0)
+  highlight_type  String?
+  top_rep         Boolean?       @default(false)
+  text            String?
+  conversation_id Int?
+  result_context  Json?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  topic_id        String?        @db.Uuid
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversations   conversations? @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  topics          topics?        @relation(fields: [topic_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "highlights_topic_name_fkey")
+}
+
+model messages {
+  text          String?
+  id            Int          @id @default(autoincrement())
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  is_read       Boolean?     @default(false)
+  transcript_id Int?
+  user_id       Int?
+  transcripts   transcripts? @relation(fields: [transcript_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         users?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model raw_audios {
+  id                           Int          @id(map: "rawaudios_pkey") @default(autoincrement())
+  storage_key                  String?
+  upload_id                    String?
+  shift_id                     String?
+  status                       String       @default("queued")
+  duration_seconds             Int?
+  created_at                   DateTime     @default(now()) @db.Timestamptz(6)
+  started_at                   DateTime?    @db.Timestamptz(6)
+  rep_id                       Int?
+  processing_last_attempted_at DateTime?    @db.Timestamptz(6)
+  call_metadata                Json?        @default("{}")
+  users                        users?       @relation(fields: [rep_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  recordings                   recordings[]
+}
+
+model recordings {
+  id               Int                      @id(map: "recording_pkey") @default(autoincrement())
+  shift_id         String?
+  created_at       DateTime                 @default(now()) @db.Timestamptz(6)
+  storage_key      String?
+  rep_id           Int?
+  qa_status        qa_status_enum_75230b6d? @default(pendingreview)
+  duration_seconds Int?                     @default(0)
+  raw_audio_id     Int?
+  parent_id        Int?
+  started_at       DateTime?                @db.Timestamptz(6)
+  words            Json?
+  transcript       Json?
+  warnings         Json?
+  qa_notes         String?
+  conversations    conversations[]
+  recordings       recordings?              @relation("recordingsTorecordings", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_recordings recordings[]             @relation("recordingsTorecordings")
+  raw_audios       raw_audios?              @relation(fields: [raw_audio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            users?                   @relation(fields: [rep_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model teams {
+  domain            String
+  api_key           String?
+  crm_type          String?
+  organization_name String
+  id                Int       @id @default(autoincrement())
+  last_synced       DateTime? @default(now()) @db.Timestamptz(6)
+  slug              String
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  onboarding_status String?   @default("onboarding")
+  topics            topics[]
+  users             users[]
+}
+
+model topics {
+  settings   Json?
+  topic_name String?
+  team_id    Int?
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  is_live    Boolean?     @default(false)
+  status     String?
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  highlights highlights[]
+  teams      teams?       @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "topic_rep_id_fkey")
+}
+
+model transcripts {
+  id              Int            @id @default(autoincrement())
+  speaker         String?
+  text            String?
+  conversation_id Int?
+  nav_end_time    Float?         @default(0)
+  end_time        Float?         @default(0)
+  start_time      Float?         @default(0)
+  messages        messages[]
+  conversations   conversations? @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  email               String?
+  team_id             Int?
+  manager_id          Int?
+  phone_number        String?
+  stytch_user_id      String?
+  top_rep             Boolean?        @default(false)
+  first_name          String?
+  last_name           String?
+  id                  Int             @id(map: "rep_pkey") @default(autoincrement())
+  twilio_phone_number String?
+  bookings            bookings[]
+  conversations       conversations[]
+  favorite            favorite[]
+  messages            messages[]
+  raw_audios          raw_audios[]
+  recordings          recordings[]
+  users               users?          @relation("usersTousers", fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_users         users[]         @relation("usersTousers")
+  teams               teams?          @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model agent {
+  id                                                      String                @id(map: "Agent_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  test_number                                             String?
+  real_number                                             String?
+  org_id                                                  String                @db.Uuid
+  name                                                    String
+  default_project                                         Boolean?              @default(false)
+  created_at                                              DateTime              @default(now()) @db.Timestamptz(6)
+  organization                                            organization          @relation(fields: [org_id], references: [id], onDelete: Cascade, map: "public_Agent_org_id_fkey")
+  agent_configuration_agent_configuration_agent_idToagent agent_configuration[] @relation("agent_configuration_agent_idToagent")
+}
+
+model agent_configuration {
+  id                                        String   @id(map: "AgentConfiguration_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at                                DateTime @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  states_prompts                            Json?    @default("{}")
+  schedule                                  Json?    @default("[{\"name\": \"Sunday\", \"weekday\": \"0\", \"available\": false, \"timeslots\": [], \"schedule_id\": \"0\"}, {\"name\": \"Monday\", \"weekday\": \"1\", \"available\": true, \"timeslots\": [{\"end_time\": \"5:00PM\", \"start_time\": \"9:00AM\"}], \"schedule_id\": \"1\"}, {\"name\": \"Tuesday\", \"weekday\": \"2\", \"available\": true, \"timeslots\": [{\"end_time\": \"5:00PM\", \"start_time\": \"9:00AM\"}], \"schedule_id\": \"2\"}, {\"name\": \"Wednesday\", \"weekday\": \"3\", \"available\": true, \"timeslots\": [{\"end_time\": \"5:00PM\", \"start_time\": \"9:00AM\"}], \"schedule_id\": \"3\"}, {\"name\": \"Thursday\", \"weekday\": \"4\", \"available\": true, \"timeslots\": [{\"end_time\": \"5:00PM\", \"start_time\": \"9:00AM\"}], \"schedule_id\": \"4\"}, {\"name\": \"Friday\", \"weekday\": \"5\", \"available\": true, \"timeslots\": [{\"end_time\": \"5:00PM\", \"start_time\": \"9:00AM\"}], \"schedule_id\": \"5\"}, {\"name\": \"Saturday\", \"weekday\": \"6\", \"available\": false, \"timeslots\": [], \"schedule_id\": \"6\"}]")
+  form                                      Json?    @default("[{\"name\": \"Form variable 1\", \"type\": \"\", \"param_id\": 1, \"description\": \"\"}]")
+  agent_id                                  String?  @db.Uuid
+  active_config                             Boolean? @default(true)
+  function_calls                            Json?    @default("[{\"type\": \"function\", \"function\": {\"name\": \"end_call\", \"parameters\": {\"type\": \"object\", \"required\": [\"message\"], \"properties\": {\"message\": {\"type\": \"string\", \"description\": \"The message you will say before ending the call with the customer.\"}}}, \"description\": \"End the call only when the customer is finished with the call.\"}}]")
+  system_prompt                             String?
+  intro_message                             String?
+  email_alert                               Boolean? @default(false)
+  prompt_variables                          Json?    @default("{}")
+  llm_model                                 String?  @default("gpt-4-turbo")
+  agent_agent_configuration_agent_idToagent agent?   @relation("agent_configuration_agent_idToagent", fields: [agent_id], references: [id], map: "public_AgentConfiguration_agent_id_fkey")
+  call                                      call[]
+}
+
+model call {
+  id                  String               @id(map: "Call_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at          DateTime             @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  started_at          DateTime             @db.Timestamptz(6)
+  duration_seconds    Decimal?             @db.Decimal
+  storage_uri         String?
+  org_id              String               @db.Uuid
+  agent_config_id     String?              @db.Uuid
+  status              String?
+  first_name          String?
+  last_name           String?
+  email               String?
+  address             String?
+  postal_code         String?
+  phone_number        String?
+  lead_metadata       Json?
+  category            String?
+  call_reason         String?
+  transcript          Json?
+  appointment_id      String?              @db.Uuid
+  debug_metadata      Json?                @default("{}")
+  agent_configuration agent_configuration? @relation(fields: [agent_config_id], references: [id], onDelete: Restrict, map: "public_Call_agent_config_id_fkey")
+  appointment         appointment?         @relation(fields: [appointment_id], references: [id], onUpdate: NoAction)
+  organization        organization         @relation(fields: [org_id], references: [id], onDelete: Cascade, map: "public_Call_org_id_fkey")
+}
+
+model end_user {
+  id           String       @id(map: "EndUser_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at   DateTime     @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  role         String       @default("admin")
+  email        String
+  org_id       String       @db.Uuid
+  organization organization @relation(fields: [org_id], references: [id], onDelete: Cascade, map: "public_EndUser_org_id_fkey")
+}
+
+model organization {
+  id             String     @id(map: "Organization_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at     DateTime   @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  name           String     @unique(map: "Organization_name_key")
+  ignore_numbers Json?      @default("[]")
+  agent          agent[]
+  call           call[]
+  end_user       end_user[]
+}
+
+model appointment {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assignee          String?
+  appointment_start DateTime?             @db.Timestamptz(6)
+  appointment_end   DateTime?             @db.Timestamptz(6)
+  status            status_enum_f0f7119e?
+  created_at        DateTime              @default(now()) @db.Timestamptz(6)
+  call              call[]
+}
+
+enum qa_status_enum_75230b6d {
+  pendingreview
+  reviewed
+  finalized
+  flaggedforreview
+  softdeleted
+}
+
+enum status_enum_f0f7119e {
+  PENDING
+  ACCEPTED
+  IGNORED
+}

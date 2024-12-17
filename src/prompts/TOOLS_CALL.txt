@@ -1,0 +1,67 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "update_call_lead",
+      "description": "Update the call lead in the database with the appointment details.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lead_details": {
+            "type": "object",
+            "properties": {
+              "call_reason": {
+                "type": "string",
+                "description": "Reason for the call"
+              },
+              "first_name": {
+                "type": "string",
+                "description": "User's first name"
+              },
+              "last_name": {
+                "type": "string",
+                "description": "User's last name"
+              },
+              "email": {
+                "type": "string",
+                "description": "User's email address"
+              },
+              "phone_number": {
+                "type": "string",
+                "description": "User's phone number"
+              },
+              "address": {
+                "type": "string",
+                "description": "User's address"
+              },
+              "postal_code": {
+                "type": "string",
+                "description": "User's postal code"
+              }
+            },
+            "required": ["call_reason"]
+          }
+        },
+        "required": ["lead_details"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "end_call",
+      "description": "End the call workflow.",
+      "parameters": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description":
+                  "The message you will say before ending the call with the customer.",
+              },
+            },
+            "required": ["message"],
+          },
+        },
+    },
+]

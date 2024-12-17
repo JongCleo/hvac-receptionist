@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "strict": true,
+
+    // can use both require and import
+    "esModuleInterop": true,
+
+    // TODO: what should this be..
+    "target": "es2020",
+
+    "moduleResolution": "NodeNext",
+    "sourceMap": true,
+    "outDir": "dist",
+
+    // base directory to resolve non-relative module names
+    "baseUrl": ".",
+
+    // means that it will not check the types of the libraries that are included in the project
+    "skipLibCheck": true,
+
+    // source code can contains ts and js files
+    "allowJs": true,
+
+    // means that the project will use the features of ES2015 and ES2020
+    "lib": ["es2015", "es2020"],
+
+    "paths": {
+      "*": ["node_modules/*"] // allows to use the import statement to import modules from the node_modules directory
+    },
+
+    "inlineSources": true,
+
+    // Set `sourceRoot` to  "/" to strip the build path prefix
+    // from generated source code references.
+    // This improves issue grouping in Sentry.
+    "sourceRoot": "/"
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
